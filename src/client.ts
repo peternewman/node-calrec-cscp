@@ -715,6 +715,16 @@ export class CalrecClient extends EventEmitter {
 						this.emit("auxOutputLevelChange", auxId, level);
 					}
 					break;
+				case COMMANDS.‎READ_STEREO_IMAGE‎: // 0x0016 -> ‎WRITE_STEREO_IMAGE‎: 0x8016
+					if (data.length >= 3) {
+						const faderId = data.readUInt16BE(0);
+						const image = data[2] === 0; // 0 = cut, 1 = uncut
+						this.debugWithTimestamp(
+							`[CalrecClient] Emitting stereoImageChange: faderId=${faderId}, image=${image}`,
+						);
+//						this.emit("stereoImageChange", faderId, isCut);
+					}
+					break;
 				default:
 					// For other write commands, just emit as unsolicited message
 					this.emit("unsolicitedMessage", { command, data });
