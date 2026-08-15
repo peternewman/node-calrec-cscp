@@ -705,6 +705,26 @@ export class CalrecClient extends EventEmitter {
 						this.emit("mainPflChange", mainId, isPfl);
 					}
 					break;
+				case COMMANDS.READ_FADER_ASSIGNMENT: // 0x0011 -> WRITE_FADER_ASSIGNMENT: 0x8011
+					if (data.length >= 6) {
+						const faderId = data.readUInt16BE(0);
+						const type = data[2];
+						const width = data[3];
+						const calrecId = data.readUInt16BE(4);
+
+						const assignment = {
+							faderId,
+							type,
+							width,
+							calrecId,
+						} as FaderAssignment;
+
+						this.debugWithTimestamp(
+							`[CalrecClient] Emitting faderAssignmentChange: faderId=${faderId}, type=${type}, width=${width}, calrecId=${calrecId}`,
+						);
+						this.emit("faderAssignmentChange", assignment);
+					}
+					break;
 				case COMMANDS.READ_AUX_OUTPUT_LEVEL: // 0x0013 -> WRITE_AUX_OUTPUT_LEVEL: 0x8013
 					if (data.length >= 4) {
 						const auxId = data.readUInt16BE(0);
