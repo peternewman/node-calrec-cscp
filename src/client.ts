@@ -287,7 +287,7 @@ export class CalrecClient extends EventEmitter {
 		// Process ACK/NAK messages first
 		if (this.dataBuffer.length > 0) {
 			if (this.dataBuffer[0] === ACK) {
-				this.debugWithTimestamp(`[CalrecClient] <<< RX: ACK (0x06)`);
+				this.debugWithTimestamp(`[CalrecClient] <<< RX: ACK (0x04)`);
 				this.dataBuffer = this.dataBuffer.slice(1);
 				return;
 			}
@@ -296,7 +296,7 @@ export class CalrecClient extends EventEmitter {
 					const errorCode = this.dataBuffer[1];
 					const errorMessage = parseNakError(errorCode);
 					this.debugWithTimestamp(
-						`[CalrecClient] <<< RX: NAK (0x15) - ${errorMessage} (code: ${errorCode})`,
+						`[CalrecClient] <<< RX: NAK (0x05) - ${errorMessage} (code: ${errorCode})`,
 					);
 
 					// Try to reject the matching pending request
