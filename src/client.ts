@@ -862,6 +862,26 @@ export class CalrecClient extends EventEmitter {
 						this.emit("mainPflChange", mainId, isPfl);
 					}
 					break;
+				case COMMANDS.READ_FADER_ASSIGNMENT: // 0x0011 -> WRITE_FADER_ASSIGNMENT: 0x8011
+					if (data.length >= 6) {
+						const faderId = data.readUInt16BE(0);
+						const type = data[2];
+						const width = data[3];
+						const calrecId = data.readUInt16BE(4);
+
+						const assignment = {
+							faderId,
+							type,
+							width,
+							calrecId,
+						} as FaderAssignment;
+
+						this.debugWithTimestamp(
+							`[CalrecClient] Emitting faderAssignmentChange: faderId=${faderId}, type=${type}, width=${width}, calrecId=${calrecId}`,
+						);
+						this.emit("faderAssignmentChange", assignment);
+					}
+					break;
 				case COMMANDS.READ_AUX_OUTPUT_LEVEL: // 0x0013 -> WRITE_AUX_OUTPUT_LEVEL: 0x8013
 					if (data.length >= 4) {
 						const auxId = data.readUInt16BE(0);
@@ -895,6 +915,16 @@ export class CalrecClient extends EventEmitter {
 				case COMMANDS.READ_AVAILABLE_AUX: // 0x0010 -> WRITE_AVAILABLE_AUX: 0x8010
 				case COMMANDS.READ_AVAILABLE_MAINS: // 0x0014 -> WRITE_AVAILABLE_MAINS: 0x8014
 					this.emitAvailableChange(baseCommand, data);
+					break;
+				case COMMANDS.READ_STEREO_IMAGE: // 0x0016 -> ‎WRITE_STEREO_IMAGE‎: 0x8016
+					if (data.length >= 3) {
+						const faderId = data.readUInt16BE(0);
+						const image = data[2] === 0; // 0 = cut, 1 = uncut
+						this.debugWithTimestamp(
+							`[CalrecClient] Emitting stereoImageChange: faderId=${faderId}, image=${image}`,
+						);
+//						this.emit("stereoImageChange", faderId, isCut);
+					}
 					break;
 				default:
 					// For other write commands, just emit as unsolicited message
