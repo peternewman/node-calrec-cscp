@@ -276,7 +276,8 @@ new CalrecClient(options: CalrecClientOptions, settings?: CalrecClientSettings)
 **Settings:**
 - `globalCommandRateMs?: number` - Minimum ms between any command (default: 10)
 - `faderLevelRateMs?: number` - Minimum ms between fader level commands (default: 100)
-- `commandResponseTimeoutMs?: number` - Timeout for command responses (default: 20)
+- `commandResponseTimeoutMs?: number` - Timeout for command responses (default: 500)
+- `initializationTimeoutMs?: number` - Timeout for console info/name during connect (default: 200)
 - `connectTimeoutMs?: number` - How long a connection attempt may take (default: 5000)
 - `heartbeatIntervalMs?: number` - How often an idle connection is probed (default: 5000, `0` disables)
 - `heartbeatMaxMisses?: number` - Unanswered probes tolerated before the connection is treated as lost (default: 2)
@@ -495,8 +496,8 @@ try {
 ### Building from Source
 
 ```bash
-git clone https://github.com/bitfocusas/calrec-cscp.git
-cd calrec-cscp
+git clone https://github.com/bitfocus/node-calrec-cscp.git
+cd node-calrec-cscp
 npm install
 npm run build
 ```
@@ -548,7 +549,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/bitfocusas/calrec-cscp/issues)
+- **Issues**: [GitHub Issues](https://github.com/bitfocus/node-calrec-cscp/issues)
 - **Documentation**: This README and inline code documentation
 - **Email**: william@bitfocus.io
 

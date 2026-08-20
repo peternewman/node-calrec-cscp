@@ -30,9 +30,9 @@ export interface CalrecClientSettings {
 	globalCommandRateMs?: number;
 	/** Minimum ms between fader level commands (default: 100) */
 	faderLevelRateMs?: number;
-	/** Timeout for command responses (default: 20) */
+	/** Timeout for command responses (default: 500) */
 	commandResponseTimeoutMs?: number;
-	/** Timeout for initialization commands (console info/name) (default: 100) */
+	/** Timeout for initialization commands (console info/name) (default: 200) */
 	initializationTimeoutMs?: number;
 	/**
 	 * How long a TCP connection attempt may take before it is abandoned
