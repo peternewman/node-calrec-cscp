@@ -11,6 +11,7 @@ A Node.js client library for communicating with Calrec audio consoles using the 
 - 🎛️ **Basic Console Control** - Control faders, mutes, routing, and more
 - 📡 **Real-time Monitoring** - Receive live updates from the console
 - 🔄 **Auto-reconnection** - Automatic reconnection on connection loss
+- 💓 **Heartbeat** - Notices a console that has gone away even when the socket stays open
 - 🛡️ **Type Safety** - Full TypeScript support with detailed type definitions
 - 🎯 **Event-driven** - Clean event-based API for state changes
 - 📊 **Unit Conversion** - Built-in dB/level conversion utilities
@@ -201,6 +202,34 @@ client.on('disconnect', () => {
 await client.disconnect();
 ```
 
+#### Detecting a Lost Console
+
+A network outage does not close a TCP socket, so a client that only waits for
+socket events keeps reporting `connected` long after the console is gone. Once the
+link goes quiet the client probes it with a console info read; after
+`heartbeatMaxMisses` unanswered probes it emits `error`, then `disconnect`, and
+reconnects if `autoReconnect` is enabled. Worst-case detection time is
+`heartbeatIntervalMs * (heartbeatMaxMisses + 1)` — 15 seconds by default.
+
+Reconnect attempts are bounded by `connectTimeoutMs`, because a host that is off
+the network never answers a SYN and the OS would otherwise spend well over a
+minute retrying a single attempt.
+
+```typescript
+const client = new CalrecClient(
+  { host: '192.168.1.100', port: 3322, maxFaderCount: 42 },
+  {
+    heartbeatIntervalMs: 5000, // 0 disables heartbeats
+    heartbeatMaxMisses: 2,
+  }
+);
+
+client.on('error', (error) => {
+  // "Console stopped responding: 2 heartbeat probe(s) unanswered, ..."
+  console.error(error.message);
+});
+```
+
 ### Error Handling
 
 ```typescript
@@ -247,7 +276,11 @@ new CalrecClient(options: CalrecClientOptions, settings?: CalrecClientSettings)
 **Settings:**
 - `globalCommandRateMs?: number` - Minimum ms between any command (default: 10)
 - `faderLevelRateMs?: number` - Minimum ms between fader level commands (default: 100)
-- `commandResponseTimeoutMs?: number` - Timeout for command responses (default: 20)
+- `commandResponseTimeoutMs?: number` - Timeout for command responses (default: 500)
+- `initializationTimeoutMs?: number` - Timeout for console info/name during connect (default: 200)
+- `connectTimeoutMs?: number` - How long a connection attempt may take (default: 5000)
+- `heartbeatIntervalMs?: number` - How often an idle connection is probed (default: 5000, `0` disables)
+- `heartbeatMaxMisses?: number` - Unanswered probes tolerated before the connection is treated as lost (default: 2)
 
 #### Methods
 
@@ -463,8 +496,8 @@ try {
 ### Building from Source
 
 ```bash
-git clone https://github.com/bitfocusas/calrec-cscp.git
-cd calrec-cscp
+git clone https://github.com/bitfocus/node-calrec-cscp.git
+cd node-calrec-cscp
 npm install
 npm run build
 ```
@@ -516,7 +549,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/bitfocusas/calrec-cscp/issues)
+- **Issues**: [GitHub Issues](https://github.com/bitfocus/node-calrec-cscp/issues)
 - **Documentation**: This README and inline code documentation
 - **Email**: william@bitfocus.io
 
