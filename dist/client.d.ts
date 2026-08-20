@@ -8,9 +8,9 @@ export interface CalrecClientSettings {
     globalCommandRateMs?: number;
     /** Minimum ms between fader level commands (default: 100) */
     faderLevelRateMs?: number;
-    /** Timeout for command responses (default: 20) */
+    /** Timeout for command responses (default: 500) */
     commandResponseTimeoutMs?: number;
-    /** Timeout for initialization commands (console info/name) (default: 100) */
+    /** Timeout for initialization commands (console info/name) (default: 200) */
     initializationTimeoutMs?: number;
     /**
      * How long a TCP connection attempt may take before it is abandoned
@@ -101,7 +101,7 @@ export declare class CalrecClient extends EventEmitter {
     /**
      * The protocol has no request IDs, so several in-flight reads can map to the
      * same response key. Every one of them is kept so that no caller is left with
-     * a promise that never settles.
+     * a promise that never settles; replies are matched FIFO (one reply, one waiter).
      */
     private addPendingRequest;
     /**
@@ -109,12 +109,14 @@ export declare class CalrecClient extends EventEmitter {
      * a timeout know it lost the race against a response.
      */
     private removePendingRequest;
+    /** Removes and returns the oldest waiter for a key, cancelling its timeout. */
+    private takeOldestPendingRequest;
     /** Removes and returns every waiter for a key, cancelling their timeouts. */
     private takePendingRequests;
     /**
      * A NAK carries no request id, so it can only be attributed to the oldest
-     * outstanding read. Every waiter on that key is rejected: the console answers
-     * a key once, so the siblings are never going to be answered either.
+     * outstanding read. Sibling waiters on the same key keep waiting for their
+     * own replies (or timeouts).
      */
     private rejectOldestPendingRequest;
     /** Rejects every outstanding read, e.g. when the connection goes away. */

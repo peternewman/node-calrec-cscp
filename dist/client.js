@@ -429,14 +429,12 @@ class CalrecClient extends node_events_1.EventEmitter {
     processIncomingMessage(message) {
         const { command, data } = message;
         const requestKey = buildRequestKey(command, data);
-        const pendingRequests = this.takePendingRequests(requestKey);
-        if (pendingRequests.length > 0) {
-            // Responses are not correlated to a specific request, so one reply
-            // answers every caller currently waiting on this key.
-            const parsed = this.parseResponseData(command, data);
-            for (const request of pendingRequests) {
-                request.resolve(parsed);
-            }
+        const pendingRequest = this.takeOldestPendingRequest(requestKey);
+        if (pendingRequest) {
+            // One reply settles one waiter. Settling every waiter on the key would
+            // leave any further replies for the same key looking unsolicited, which
+            // spuriously emits change events (e.g. faderLevelChange).
+            pendingRequest.resolve(this.parseResponseData(command, data));
             return;
         }
         // If no pending request found, this is an unsolicited message
@@ -851,7 +849,7 @@ class CalrecClient extends node_events_1.EventEmitter {
     /**
      * The protocol has no request IDs, so several in-flight reads can map to the
      * same response key. Every one of them is kept so that no caller is left with
-     * a promise that never settles.
+     * a promise that never settles; replies are matched FIFO (one reply, one waiter).
      */
     addPendingRequest(requestKey, request) {
         const waiters = this.requestMap.get(requestKey);
@@ -880,6 +878,20 @@ class CalrecClient extends node_events_1.EventEmitter {
         }
         return true;
     }
+    /** Removes and returns the oldest waiter for a key, cancelling its timeout. */
+    takeOldestPendingRequest(requestKey) {
+        const waiters = this.requestMap.get(requestKey);
+        if (!waiters || waiters.length === 0)
+            return undefined;
+        const request = waiters.shift();
+        if (!request)
+            return undefined;
+        clearTimeout(request.timeout);
+        if (waiters.length === 0) {
+            this.requestMap.delete(requestKey);
+        }
+        return request;
+    }
     /** Removes and returns every waiter for a key, cancelling their timeouts. */
     takePendingRequests(requestKey) {
         const waiters = this.requestMap.get(requestKey);
@@ -893,8 +905,8 @@ class CalrecClient extends node_events_1.EventEmitter {
     }
     /**
      * A NAK carries no request id, so it can only be attributed to the oldest
-     * outstanding read. Every waiter on that key is rejected: the console answers
-     * a key once, so the siblings are never going to be answered either.
+     * outstanding read. Sibling waiters on the same key keep waiting for their
+     * own replies (or timeouts).
      */
     rejectOldestPendingRequest(errorMessage) {
         const oldestKey = this.requestMap.keys().next();
@@ -902,7 +914,8 @@ class CalrecClient extends node_events_1.EventEmitter {
             this.debugWithTimestamp(`[CalrecClient] NAK without pending request: ${errorMessage}`);
             return;
         }
-        for (const request of this.takePendingRequests(oldestKey.value)) {
+        const request = this.takeOldestPendingRequest(oldestKey.value);
+        if (request) {
             request.reject(new Error(`NAK: ${errorMessage}`));
         }
     }
