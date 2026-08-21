@@ -779,6 +779,30 @@ export class CalrecClient extends EventEmitter {
 					);
 					return new Array(this.getEffectiveMaxFaderCount()).fill(false);
 				}
+			case COMMANDS.READ_STEREO_IMAGE:
+				try {
+					const maxFaders = this.getEffectiveMaxFaderCount();
+					const stereoImage = new Array(maxFaders * 2).fill(false);
+					for (
+						let byteIndex = 0;
+						byteIndex < Math.min(data.length, Math.ceil((maxFaders * 2) / 8));
+						byteIndex++
+					) {
+						const byte = data[byteIndex];
+						for (let bitIndex = 0; bitIndex < 8; bitIndex++) {
+							const faderIndex = byteIndex * 8 + bitIndex;
+							if (faderIndex < (maxFaders * 2)) {
+								stereoImage[faderIndex] = (byte & (1 << bitIndex)) !== 0;
+							}
+						}
+					}
+					return stereoImage;
+				} catch (error) {
+					this.debugWithTimestamp(
+						`[CalrecClient] Failed to parse stereo image: ${error}, data: ${data.toString("hex")}`,
+					);
+					return new Array(this.getEffectiveMaxFaderCount() * 2).fill(false);
+				}
 		}
 
 		// Handle write commands
@@ -917,11 +941,10 @@ export class CalrecClient extends EventEmitter {
 					this.emitAvailableChange(baseCommand, data);
 					break;
 				case COMMANDS.READ_STEREO_IMAGE: // 0x0016 -> ‎WRITE_STEREO_IMAGE‎: 0x8016
-					if (data.length >= 3) {
-						const faderId = data.readUInt16BE(0);
-						const image = data[2] === 0; // 0 = cut, 1 = uncut
+					if (data.length >= 1) {
+						const stereoImage = this.parseResponseData(baseCommand, data) as boolean[];
 						this.debugWithTimestamp(
-							`[CalrecClient] Emitting stereoImageChange: faderId=${faderId}, image=${image}`,
+							`[CalrecClient] Emitting stereoImageChange: faderCount=${stereoImage.length / 2}, leftToBoth=${stereoImage[0]}, rightToBoth=${stereoImage[1]}`,
 						);
 //						this.emit("stereoImageChange", faderId, isCut);
 					}
