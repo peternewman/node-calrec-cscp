@@ -707,21 +707,27 @@ export class CalrecClient extends EventEmitter {
 				}
 			case COMMANDS.READ_STEREO_IMAGE:
 				try {
-					if (data.length >= 4) {
-						return {
-							leftToBoth: !!data[2],
-							rightToBoth: !!data[3],
-						} as StereoImage;
+					const maxFaders = this.getEffectiveMaxFaderCount();
+					const stereoImage = new Array(maxFaders * 2).fill(false);
+					for (
+						let byteIndex = 0;
+						byteIndex < Math.min(data.length, Math.ceil((maxFaders * 2) / 8));
+						byteIndex++
+					) {
+						const byte = data[byteIndex];
+						for (let bitIndex = 0; bitIndex < 8; bitIndex++) {
+							const faderIndex = byteIndex * 8 + bitIndex;
+							if (faderIndex < (maxFaders * 2)) {
+								stereoImage[faderIndex] = (byte & (1 << bitIndex)) !== 0;
+							}
+						}
 					}
-					throw new Error("Stereo image data too short");
+					return stereoImage;
 				} catch (error) {
 					this.debugWithTimestamp(
 						`[CalrecClient] Failed to parse stereo image: ${error}, data: ${data.toString("hex")}`,
 					);
-					return {
-						leftToBoth: false,
-						rightToBoth: false,
-					} as StereoImage;
+					return new Array(this.getEffectiveMaxFaderCount() * 2).fill(false);
 				}
 			case COMMANDS.READ_FADER_CUT:
 				return data[2] === 0; // 0 = cut, 1 = uncut
@@ -778,30 +784,6 @@ export class CalrecClient extends EventEmitter {
 						`[CalrecClient] Failed to parse aux send routing: ${error}, data: ${data.toString("hex")}`,
 					);
 					return new Array(this.getEffectiveMaxFaderCount()).fill(false);
-				}
-			case COMMANDS.READ_STEREO_IMAGE:
-				try {
-					const maxFaders = this.getEffectiveMaxFaderCount();
-					const stereoImage = new Array(maxFaders * 2).fill(false);
-					for (
-						let byteIndex = 0;
-						byteIndex < Math.min(data.length, Math.ceil((maxFaders * 2) / 8));
-						byteIndex++
-					) {
-						const byte = data[byteIndex];
-						for (let bitIndex = 0; bitIndex < 8; bitIndex++) {
-							const faderIndex = byteIndex * 8 + bitIndex;
-							if (faderIndex < (maxFaders * 2)) {
-								stereoImage[faderIndex] = (byte & (1 << bitIndex)) !== 0;
-							}
-						}
-					}
-					return stereoImage;
-				} catch (error) {
-					this.debugWithTimestamp(
-						`[CalrecClient] Failed to parse stereo image: ${error}, data: ${data.toString("hex")}`,
-					);
-					return new Array(this.getEffectiveMaxFaderCount() * 2).fill(false);
 				}
 		}
 
