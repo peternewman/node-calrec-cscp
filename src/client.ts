@@ -732,8 +732,18 @@ export class CalrecClient extends EventEmitter {
 			case COMMANDS.READ_AVAILABLE_AUX:
 				try {
 					const available = new Array(32).fill(false);
-					for (let i = 0; i < Math.min(data.length, 32); i++) {
-						available[i] = (data[i] & 0x01) !== 0;
+					for (
+						let byteIndex = 0;
+						byteIndex < Math.min(data.length, Math.ceil(32 / 8));
+						byteIndex++
+					) {
+						const byte = data[byteIndex];
+						for (let bitIndex = 0; bitIndex < 8; bitIndex++) {
+							const auxIndex = byteIndex * 8 + bitIndex;
+							if (auxIndex < 32) {
+								available[auxIndex] = (byte & (1 << bitIndex)) !== 0;
+							}
+						}
 					}
 					return available;
 				} catch (error) {
@@ -745,8 +755,18 @@ export class CalrecClient extends EventEmitter {
 			case COMMANDS.READ_AVAILABLE_MAINS:
 				try {
 					const available = new Array(16).fill(false);
-					for (let i = 0; i < Math.min(data.length, 16); i++) {
-						available[i] = (data[i] & 0x01) !== 0;
+					for (
+						let byteIndex = 0;
+						byteIndex < Math.min(data.length, Math.ceil(16 / 8));
+						byteIndex++
+					) {
+						const byte = data[byteIndex];
+						for (let bitIndex = 0; bitIndex < 8; bitIndex++) {
+							const auxIndex = byteIndex * 8 + bitIndex;
+							if (mainIndex < 16) {
+								available[mainIndex] = (byte & (1 << bitIndex)) !== 0;
+							}
+						}
 					}
 					return available;
 				} catch (error) {
