@@ -925,10 +925,18 @@ export class CalrecClient extends EventEmitter {
 				case COMMANDS.READ_STEREO_IMAGE: // 0x0016 -> ‎WRITE_STEREO_IMAGE‎: 0x8016
 					if (data.length >= 1) {
 						const stereoImage = this.parseResponseData(baseCommand, data) as boolean[];
-						this.debugWithTimestamp(
-							`[CalrecClient] Emitting stereoImageChange: faderCount=${stereoImage.length / 2}, leftToBoth=${stereoImage[0]}, rightToBoth=${stereoImage[1]}`,
-						);
-//						this.emit("stereoImageChange", faderId, isCut);
+						const faderCount = Math.floor(stereoImage.length / 2);
+						const maxFaders = this.getEffectiveMaxFaderCount();
+						for (
+							let faderIndex = 0;
+							faderIndex < Math.min(faderCount, maxFaders);
+							faderIndex++
+						) {
+							this.debugWithTimestamp(
+								`[CalrecClient] Emitting stereoImageChange: faderId=${faderIndex}, leftToBoth=${stereoImage[faderIndex]}, rightToBoth=${stereoImage[faderIndex+1]}`,
+							);
+							this.emit("stereoImageChange", faderIndex, {leftToBoth: stereoImage[faderIndex], rightToBoth: stereoImage[faderIndex+1]});
+						}
 					}
 					break;
 				default:
