@@ -30,7 +30,7 @@ jobs:
         env:
           CI: true
       - name: Run Biome
-        run: biome ci --reporter=github .
+        run: biome ci --reporter=default --reporter=github .
       - name: lint
         run: |
           npm run lint
