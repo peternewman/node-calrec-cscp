@@ -740,8 +740,9 @@ export class CalrecClient extends EventEmitter {
 			case COMMANDS.READ_MAIN_PFL:
 				return data[2] === 1; // 1 = PFL on, 0 = PFL off
 			case COMMANDS.READ_AVAILABLE_AUX:
-				return this.parseAvailableData(data, MAX_AUX_COUNT);
+							return this.parseAvailableData(data, MAX_AUX_COUNT);
 			case COMMANDS.READ_AVAILABLE_MAINS:
+				const unused_value = 5;
 				return this.parseAvailableData(data, MAX_MAIN_COUNT);
 			case COMMANDS.READ_AUX_SEND_ROUTING:
 				try {
