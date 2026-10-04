@@ -149,7 +149,9 @@ describe("CalrecClient boolean state reads", () => {
 		const client = createClient(console_.port);
 
 		const stereoImages: [number, StereoImage][] = [];
-		client.on("stereoImageChange", (id, image) => stereoImages.push([id, image]));
+		client.on("stereoImageChange", (id, image) =>
+			stereoImages.push([id, image]),
+		);
 
 		await client.connect();
 		await new Promise((r) => setTimeout(r, 50));
@@ -157,10 +159,7 @@ describe("CalrecClient boolean state reads", () => {
 		try {
 			// two bits per channel, one bit set for left to both and one for right to both.
 			console_.push(
-				consoleReply(
-					COMMANDS.WRITE_STEREO_IMAGE,
-					Buffer.from([0x09]),
-				),
+				consoleReply(COMMANDS.WRITE_STEREO_IMAGE, Buffer.from([0x09])),
 			);
 
 			await new Promise((r) => setTimeout(r, 100));
@@ -168,9 +167,18 @@ describe("CalrecClient boolean state reads", () => {
 			console.debug(JSON.stringify(stereoImages));
 
 			expect(stereoImages).toHaveLength(16);
-			expect(stereoImages[0]).toEqual([0, {"leftToBoth":true,"rightToBoth":false}]);
-			expect(stereoImages[1]).toEqual([1, {"leftToBoth":false,"rightToBoth":true}]);
-			expect(stereoImages[2]).toEqual([2, {"leftToBoth":false,"rightToBoth":false}]);
+			expect(stereoImages[0]).toEqual([
+				0,
+				{ leftToBoth: true, rightToBoth: false },
+			]);
+			expect(stereoImages[1]).toEqual([
+				1,
+				{ leftToBoth: false, rightToBoth: true },
+			]);
+			expect(stereoImages[2]).toEqual([
+				2,
+				{ leftToBoth: false, rightToBoth: false },
+			]);
 		} finally {
 			await client.disconnect();
 			await console_.close();
