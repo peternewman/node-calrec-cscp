@@ -24,6 +24,8 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - name: Setup Biome
         uses: biomejs/setup-biome@v2
+        with:
+          version: latest
       - name: Prepare Environment
         run: |
           npm install
